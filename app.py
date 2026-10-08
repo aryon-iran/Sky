@@ -1,16 +1,17 @@
 # ==========================================
-#   Sky Messenger - نسخه ساده MVP
+#   Sky Messenger - نسخه نهایی v1.0
 #   Backend: Python + FastAPI + SQLite
+#   Deploy: Render
 # ==========================================
 
-from fastapi import FastAPI, Request, HTTPException, Depends
-from fastapi.responses import HTMLResponse, JSONResponse
-from fastapi.staticfiles import StaticFiles
+from fastapi import FastAPI, Request, HTTPException
+from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 from passlib.hash import bcrypt
 import sqlite3
 import secrets
+import os
 from datetime import datetime
 
 # ---------- تنظیمات اولیه ----------
@@ -18,7 +19,7 @@ app = FastAPI(title="Sky Messenger")
 templates = Jinja2Templates(directory="templates")
 
 DB_PATH = "sky.db"
-TOKENS = {}  # توکن -> user_id  (ساده، بدون JWT)
+TOKENS = {}  # توکن -> user_id
 
 # ---------- دیتابیس ----------
 def init_db():
@@ -38,9 +39,7 @@ def init_db():
             sender_id INTEGER NOT NULL,
             receiver_id INTEGER NOT NULL,
             content TEXT NOT NULL,
-            created_at TEXT NOT NULL,
-            FOREIGN KEY(sender_id) REFERENCES users(id),
-            FOREIGN KEY(receiver_id) REFERENCES users(id)
+            created_at TEXT NOT NULL
         )
     """)
     conn.commit()
@@ -57,6 +56,9 @@ class MessageData(BaseModel):
     token: str
     receiver_id: int
     content: str
+
+class LogoutData(BaseModel):
+    token: str
 
 # ---------- ابزار ----------
 def get_db():
@@ -76,11 +78,11 @@ def user_from_token(token: str):
 # ---------- صفحات ----------
 @app.get("/", response_class=HTMLResponse)
 async def root(request: Request):
-    return templates.TemplateResponse("login.html", {"request": request})
+    return templates.TemplateResponse(request, "login.html")
 
 @app.get("/chat", response_class=HTMLResponse)
 async def chat_page(request: Request):
-    return templates.TemplateResponse("chat.html", {"request": request})
+    return templates.TemplateResponse(request, "chat.html")
 
 # ---------- API احراز هویت ----------
 @app.post("/api/register")
@@ -127,10 +129,9 @@ async def login(data: AuthData):
 
 
 @app.post("/api/logout")
-async def logout(payload: dict):
-    token = payload.get("token")
-    if token in TOKENS:
-        del TOKENS[token]
+async def logout(data: LogoutData):
+    if data.token in TOKENS:
+        del TOKENS[data.token]
     return {"ok": True}
 
 # ---------- API کاربران ----------
@@ -189,4 +190,5 @@ async def get_messages(other_id: int, token: str, last_id: int = 0):
 # ---------- اجرا ----------
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run(app, host="0.0.0.0", port=port)
