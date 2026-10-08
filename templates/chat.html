@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sky — چت</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Vazirmatn', sans-serif; }
+
+        body {
+            height: 100vh;
+            background: linear-gradient(135deg, #87CEEB, #4A90E2);
+            display: flex;
+            overflow: hidden;
+        }
+
+        /* ---------- سایدبار ---------- */
+        .sidebar {
+            width: 320px;
+            background: rgba(255, 255, 255, 0.98);
+            display: flex;
+            flex-direction: column;
+            box-shadow: 2px 0 20px rgba(0,0,0,0.1);
+            z-index: 2;
+        }
+
+        .sidebar-header {
+            padding: 20px;
+            background: linear-gradient(135deg, #4A90E2, #1E3A8A);
+            color: white;
+        }
+
+        .sidebar-header .me {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .avatar {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.25);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 18px;
+            text-transform: uppercase;
+        }
+
+        .me-info h3 { font-size: 16px; font-weight: 700; }
+        .me-info p { font-size: 12px; opacity: 0.85; }
+
+        .logout-btn {
+            margin-right: auto;
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.2s;
+        }
+
+        .logout-btn:hover { background: rgba(255,255,255,0.35); }
+
+        .search-box {
+            padding: 12px 16px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 10px 14px;
+            border: none;
+            background: #f1f5f9;
+            border-radius: 10px;
+            font-size: 14px;
+            font-family: inherit;
+        }
+
+        .search-box input:focus { outline: 2px solid #4A90E2; background: white; }
+
+        .users-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px;
+        }
+
+        .user-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 4px;
+        }
+
+        .user-item:hover { background: #f1f5f9; }
+        .user-item.active {
+            background: linear-gradient(135deg, #4A90E2, #1E3A8A);
+            color: white;
+        }
+
+        .user-item.active .user-avatar { background: rgba(255,255,255,0.3); }
+
+        .user-avatar {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #87CEEB, #4A90E2);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 16px;
+            text-transform: uppercase;
+            flex-shrink: 0;
+        }
+
+        .user-item.active .user-avatar { color: white; }
+
+        .user-details { flex: 1; overflow: hidden; }
+        .user-details h4 { font-size: 14px; font-weight: 600; margin-bottom: 2px; }
+        .user-details p {
+            font-size: 12px;
+            color: #64748b;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .user-item.active .user-details p { color: rgba(255,255,255,0.8); }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #94a3b8;
+            font-size: 13px;
+        }
+
+        /* ---------- ناحیه چت ---------- */
+        .chat-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #e5eef7;
+            background-image:
+                radial-gradient(circle at 20% 30%, rgba(135, 206, 235, 0.4) 0%, transparent 40%),
+                radial-gradient(circle at 80% 70%, rgba(74, 144, 226, 0.3) 0%, transparent 40%);
+            position: relative;
+        }
+
+        .chat-header {
+            padding: 16px 24px;
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        .chat-header .user-avatar { width: 40px; height: 40px; font-size: 15px; }
+        .chat-header h3 { font-size: 16px; color: #1E3A8A; }
+        .chat-header p { font-size: 12px; color: #64748b; }
+
+        .messages-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .message {
+            max-width: 70%;
+            padding: 10px 14px;
+            border-radius: 16px;
+            font-size: 14px;
+            line-height: 1.5;
+            word-wrap: break-word;
+            animation: popIn 0.25s ease;
+            position: relative;
+        }
+
+        @keyframes popIn {
+            from { opacity: 0; transform: translateY(10px) scale(0.95); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        .message.sent {
+            align-self: flex-end;
+            background: linear-gradient(135deg, #4A90E2, #1E3A8A);
+            color: white;
+            border-bottom-left-radius: 16px;
+            border-bottom-right-radius: 4px;
+        }
+
+        .message.received {
+            align-self: flex-start;
+            background: white;
+            color: #1e293b;
+            border-bottom-right-radius: 16px;
+            border-bottom-left-radius: 4px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+
+        .message .time {
+            font-size: 10px;
+            opacity: 0.7;
+            margin-top: 4px;
+            display: block;
+        }
+
+        .message.sent .time { text-align: left; }
+        .message.received .time { text-align: right; color: #94a3b8; }
+
+        /* ---------- ورودی پیام ---------- */
+        .input-area {
+            padding: 16px 20px;
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(10px);
+            display: flex;
+            gap: 10px;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        .input-area input {
+            flex: 1;
+            padding: 14px 18px;
+            border: 2px solid #e2e8f0;
+            border-radius: 24px;
+            font-size: 14px;
+            font-family: inherit;
+            transition: all 0.3s;
+        }
+
+        .input-area input:focus {
+            outline: none;
+            border-color: #4A90E2;
+            box-shadow: 0 0 0 4px rgba(74, 144, 226, 0.15);
+        }
+
+        .send-btn {
+            width: 52px;
+            height: 52px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #4A90E2, #1E3A8A);
+            border: none;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+
+        .send-btn:hover { transform: scale(1.08); box-shadow: 0 8px 20px rgba(74, 144, 226, 0.4); }
+        .send-btn:active { transform: scale(0.95); }
+        .send-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* ---------- حالت خالی ---------- */
+        .welcome {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #64748b;
+            text-align: center;
+            padding: 40px;
+        }
+
+        .welcome-icon {
+            font-size: 80px;
+            margin-bottom: 16px;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-15px); }
+        }
+
+        .welcome h2 { font-size: 24px; color: #1E3A8A; margin-bottom: 8px; }
+        .welcome p { font-size: 14px; }
+
+        /* ---------- موبایل ---------- */
+        @media (max-width: 768px) {
+            .sidebar {
+                position: absolute;
+                top: 0; right: 0;
+                height: 100%;
+                width: 100%;
+                transform: translateX(100%);
+                transition: transform 0.3s;
+            }
+            .sidebar.show { transform: translateX(0); }
+
+            .chat-area { width: 100%; }
+
+            .back-btn {
+                display: flex !important;
+                background: none;
+                border: none;
+                font-size: 22px;
+                color: #4A90E2;
+                cursor: pointer;
+                padding: 0 8px;
+            }
+        }
+
+        .back-btn { display: none; }
+
+        /* اسکرول‌بار */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(74, 144, 226, 0.3); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(74, 144, 226, 0.6); }
+    </style>
+</head>
+<body>
+    <!-- سایدبار -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="me">
+                <div class="avatar" id="myAvatar">?</div>
+                <div class="me-info">
+                    <h3 id="myUsername">...</h3>
+                    <p>آنلاین ☁️</p>
+                </div>
+                <button class="logout-btn" onclick="logout()" title="خروج">⏻</button>
+            </div>
+        </div>
+
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="🔍 جستجوی کاربر...">
+        </div>
+
+        <div class="users-list" id="usersList">
+            <div class="empty-state">در حال بارگذاری...</div>
+        </div>
+    </aside>
+
+    <!-- ناحیه چت -->
+    <main class="chat-area" id="chatArea">
+        <div class="welcome" id="welcome">
+            <div class="welcome-icon">☁️</div>
+            <h2>به Sky خوش اومدی</h2>
+            <p>یه کاربر رو از لیست انتخاب کن و شروع کن به چت</p>
+        </div>
+
+        <div class="chat-header" id="chatHeader" style="display:none;">
+            <button class="back-btn" onclick="toggleSidebar()">☰</button>
+            <div class="user-avatar" id="chatAvatar">?</div>
+            <div>
+                <h3 id="chatUsername">...</h3>
+                <p>چت خصوصی</p>
+            </div>
+        </div>
+
+        <div class="messages-area" id="messagesArea" style="display:none;"></div>
+
+        <div class="input-area" id="inputArea" style="display:none;">
+            <input type="text" id="messageInput" placeholder="پیامت رو بنویس..." autocomplete="off">
+            <button class="send-btn" id="sendBtn" onclick="sendMessage()">➤</button>
+        </div>
+    </main>
+
+    <script>
+        const token = localStorage.getItem('sky_token');
+        const myUser = JSON.parse(localStorage.getItem('sky_user') || 'null');
+
+        if (!token || !myUser) {
+            window.location.href = '/';
+        }
+
+        let currentChat = null;    // کاربری که داریم باهاش چت میکنیم
+        let lastMessageId = 0;
+        let pollTimer = null;
+        let allUsers = [];
+
+        // راهاندازی اولیه
+        document.getElementById('myUsername').textContent = myUser.username;
+        document.getElementById('myAvatar').textContent = myUser.username[0];
+
+        loadUsers();
+
+        // ----- توابع -----
+
+        async function loadUsers() {
+            try {
+                const res = await fetch('/api/users?token=' + encodeURIComponent(token));
+                if (res.status === 401) return logout();
+                allUsers = await res.json();
+                renderUsers(allUsers);
+            } catch (err) {
+                document.getElementById('usersList').innerHTML =
+                    '<div class="empty-state">خطا در بارگذاری</div>';
+            }
+        }
+
+        function renderUsers(users) {
+            const list = document.getElementById('usersList');
+            if (!users.length) {
+                list.innerHTML = '<div class="empty-state">هنوز کسی تو Sky نیست 🥲<br>لینک رو بفرست برای رفیقات</div>';
+                return;
+            }
+
+            list.innerHTML = users.map(u => `
+                <div class="user-item ${currentChat && currentChat.id === u.id ? 'active' : ''}"
+                     onclick='openChat(${JSON.stringify(u)})'>
+                    <div class="user-avatar">${escapeHtml(u.username[0])}</div>
+                    <div class="user-details">
+                        <h4>${escapeHtml(u.username)}</h4>
+                        <p>برای چت کلیک کن</p>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function openChat(user) {
+            currentChat = user;
+            lastMessageId = 0;
+
+            document.getElementById('welcome').style.display = 'none';
+            document.getElementById('chatHeader').style.display = 'flex';
+            document.getElementById('messagesArea').style.display = 'flex';
+            document.getElementById('inputArea').style.display = 'flex';
+
+            document.getElementById('chatUsername').textContent = user.username;
+            document.getElementById('chatAvatar').textContent = user.username[0];
+
+            document.getElementById('messagesArea').innerHTML = '';
+            document.getElementById('messageInput').focus();
+
+            // موبایل: بستن سایدبار
+            if (window.innerWidth <= 768) {
+                document.getElementById('sidebar').classList.remove('show');
+            }
+
+            renderUsers(allUsers);
+            loadMessages();
+
+            if (pollTimer) clearInterval(pollTimer);
+            pollTimer = setInterval(loadMessages, 2000);
+        }
+
+        async function loadMessages() {
+            if (!currentChat) return;
+
+            try {
+                const url = `/api/messages/${currentChat.id}?token=${encodeURIComponent(token)}&last_id=${lastMessageId}`;
+                const res = await fetch(url);
+                if (res.status === 401) return logout();
+
+                const messages = await res.json();
+                if (messages.length) {
+                    messages.forEach(addMessage);
+                    lastMessageId = messages[messages.length - 1].id;
+                }
+            } catch (err) { /* بیصدا */ }
+        }
+
+        function addMessage(msg) {
+            const area = document.getElementById('messagesArea');
+            const isSent = msg.sender_id === myUser.id;
+
+            const div = document.createElement('div');
+            div.className = 'message ' + (isSent ? 'sent' : 'received');
+
+            const time = new Date(msg.created_at).toLocaleTimeString('fa-IR', {
+                hour: '2-digit', minute: '2-digit'
+            });
+
+            div.innerHTML = `
+                ${escapeHtml(msg.content)}
+                <span class="time">${time}</span>
+            `;
+
+            area.appendChild(div);
+            area.scrollTop = area.scrollHeight;
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const content = input.value.trim();
+            if (!content || !currentChat) return;
+
+            const btn = document.getElementById('sendBtn');
+            btn.disabled = true;
+            input.value = '';
+
+            try {
+                const res = await fetch('/api/send', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        token,
+                        receiver_id: currentChat.id,
+                        content
+                    })
+                });
+
+                if (res.status === 401) return logout();
+                await loadMessages();
+            } catch (err) {
+                alert('پیام ارسال نشد');
+            } finally {
+                btn.disabled = false;
+                input.focus();
+            }
+        }
+
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('show');
+        }
+
+        async function logout() {
+            try {
+                await fetch('/api/logout', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token })
+                });
+            } catch (e) {}
+            localStorage.removeItem('sky_token');
+            localStorage.removeItem('sky_user');
+            window.location.href = '/';
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // ----- رویدادها -----
+
+        document.getElementById('messageInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendMessage();
+        });
+
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            const q = e.target.value.trim().toLowerCase();
+            const filtered = q
+                ? allUsers.filter(u => u.username.toLowerCase().includes(q))
+                : allUsers;
+            renderUsers(filtered);
+        });
+    </script>
+</body>
+</html>
